@@ -2,10 +2,13 @@
 # Script to compute summary for athletes.php xml file
 
 require( xml2 )
+require( xtable )
+source( '/home/kranke/Documents/ResearchProjects/Maxithlon/CODE/staticdata.R' )
 
 # Input begins
-leagueid   <- 7
+leagueid   <- 1
 datadir    <- '/home/kranke/Documents/ResearchProjects/Maxithlon/Data'
+docsdir    <- '/home/kranke/Documents/ResearchProjects/Maxithlon/CODE/docs'
 colsummary <- c( 'age', 'wage', 'height', 'weight', 'fans', 'maxid', 'form', 'care', 'experience', 'mood' )
 # Input ends
 
@@ -19,8 +22,8 @@ number     <- as.numeric( xml_text( xml_find_first( leaguedoc, 'number' ) ) )
 teamids    <- xml_attr( xml_find_all( leaguedoc, "//team" ), 'id' )
 
 # Initialize leaguedf
-leaguedf             <- data.frame( matrix( ncol = length( colsummary ) + 4, nrow = length( teamids ) ) )
-colnames( leaguedf ) <- c( 'teamId', 'teamName', 'owner', 'regionId', colsummary )
+leaguedf             <- data.frame( matrix( ncol = length( colsummary ) + 6, nrow = length( teamids ) ) )
+colnames( leaguedf ) <- c( 'teamId', 'teamName', 'owner', 'regionId', 'athletesCount', 'weeklyWage', colsummary )
 leaguedf$teamId      <- teamids
 
 # Loop over each team
@@ -47,8 +50,16 @@ for ( teamid in teamids ) {
   }
 
   # Summarize athletes file and fill league dataframe
-  athldf[, colsummary ]         <- lapply( athldf[, colsummary ], as.numeric )
-  leaguedf[ idxdf, colsummary ] <- apply( athldf[ athldf$youth == 0, colsummary ], 2, mean  )
+  leaguedf$athletesCount[ idxdf ] <- sum( athldf$youth == 0  )
+  athldf[, colsummary ]           <- lapply( athldf[, colsummary ], as.numeric )
+  leaguedf[ idxdf, colsummary ]   <- apply( athldf[ athldf$youth == 0, colsummary ], 2, mean  )
+  leaguedf$wage[ idxdf ]          <- leaguedf$wage[ idxdf ] * leaguedf$athletesCount[ idxdf ]
+  leaguedf$weeklyWage[ idxdf ]    <- paste( round( leaguedf$wage[ idxdf ]/1e3 ), 'k', sep = '' )
 }
 
-print( leaguedf )
+leaguedf      <- leaguedf[ order( -leaguedf$wage ), ]
+leaguedf$wage <- NULL
+outfile       <- paste( docsdir, '/table.html', sep = '' )
+digits        <- c( 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 2, 2, 2, 2 )
+writeLines( print( xtable( leaguedf, digits = digits ),  type="html", html.table.attributes="", include.rownames = FALSE  ), outfile )
+print( paste( "Season ", season, "; ", nationNames[ nationId ], " League ", level, ".", number, sep = '') )
