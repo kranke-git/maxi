@@ -3,10 +3,11 @@
 
 require( xml2 )
 require( xtable )
-source( '/home/kranke/Documents/ResearchProjects/Maxithlon/CODE/staticdata.R' )
+source( '/home/kranke/Documents/ResearchProjects/Maxithlon/CODE/RCode/staticdata.R' )
+source( '/home/kranke/Documents/ResearchProjects/Maxithlon/CODE/RCode/utils.R' )
 
 # Input begins
-leagueid   <- 1
+leagueid   <- 7 
 datadir    <- '/home/kranke/Documents/ResearchProjects/Maxithlon/Data'
 docsdir    <- '/home/kranke/Documents/ResearchProjects/Maxithlon/CODE/docs'
 colsummary <- c( 'age', 'wage', 'height', 'weight', 'fans', 'maxid', 'form', 'care', 'experience', 'mood' )
@@ -21,23 +22,24 @@ level      <- as.numeric( xml_text( xml_find_first( leaguedoc, 'level' ) ) )
 number     <- as.numeric( xml_text( xml_find_first( leaguedoc, 'number' ) ) )
 teamids    <- xml_attr( xml_find_all( leaguedoc, "//team" ), 'id' )
 
-# Initialize leaguedf
+# Initialize leaguedf and other data frames
 leaguedf             <- data.frame( matrix( ncol = length( colsummary ) + 6, nrow = length( teamids ) ) )
 colnames( leaguedf ) <- c( 'teamId', 'teamName', 'owner', 'regionId', 'athletesCount', 'weeklyWage', colsummary )
 leaguedf$teamId      <- teamids
+seniordf             <- leaguedf
+speclst              <- list()
+specids              <- c( 1, 2, 3, 4, 5, 6, 7 )
+for ( s in specids ) {
+  speclst[[ s ]] <- leaguedf
+}
 
 # Loop over each team
 for ( teamid in teamids ) {
-  
+ 
   # Team file
   idxdf    <- which( leaguedf$teamId == teamid )
   teamfile <- paste( datadir, '/TEAM/teaminfo_', teamid, '.xml', sep = '' )
   teamdoc  <- read_xml( teamfile )
-
-  # Assign the team info
-  leaguedf$teamName[ idxdf ] <- xml_text( xml_find_first( teamdoc, 'teamName' ) ) 
-  leaguedf$owner[ idxdf ]    <- xml_text( xml_find_first( teamdoc, 'owner' ) ) 
-  leaguedf$regionId[ idxdf ] <- xml_text( xml_find_first( teamdoc, 'regionId' ) ) 
  
   # Athletes file
   athfile  <- paste( datadir, '/ATHLETES/athletes_team_', teamid, '.xml', sep = '' )
@@ -50,16 +52,17 @@ for ( teamid in teamids ) {
   }
 
   # Summarize athletes file and fill league dataframe
-  leaguedf$athletesCount[ idxdf ] <- sum( athldf$youth == 0  )
-  athldf[, colsummary ]           <- lapply( athldf[, colsummary ], as.numeric )
-  leaguedf[ idxdf, colsummary ]   <- apply( athldf[ athldf$youth == 0, colsummary ], 2, mean  )
-  leaguedf$wage[ idxdf ]          <- leaguedf$wage[ idxdf ] * leaguedf$athletesCount[ idxdf ]
-  leaguedf$weeklyWage[ idxdf ]    <- paste( round( leaguedf$wage[ idxdf ]/1e3 ), 'k', sep = '' )
+  leaguedf <- summarize_athletes( leaguedf, idxdf, athldf, athldf$youth == 0, colsummary, teamdoc )
+  seniordf <- summarize_athletes( seniordf, idxdf, athldf, athldf$youth == 0 & as.numeric( athldf$age >= 18 ), colsummary, teamdoc )
+  for ( s in specids ) {
+    speclst[[ s ]] <- summarize_athletes( speclst[[ s ]], idxdf, athldf, athldf$youth == 0 & as.numeric( athldf$specialtyId ) == s, colsummary, teamdoc )
+  }
 }
 
-leaguedf      <- leaguedf[ order( -leaguedf$wage ), ]
-leaguedf$wage <- NULL
-outfile       <- paste( docsdir, '/table.html', sep = '' )
-digits        <- c( 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 2, 2, 2, 2 )
-writeLines( print( xtable( leaguedf, digits = digits ),  type="html", html.table.attributes="", include.rownames = FALSE  ), outfile )
-print( paste( "Season ", season, "; ", nationNames[ nationId ], " League ", level, ".", number, sep = '') )
+# Write routines
+digits          <- c( 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 2, 2, 2, 2 )
+writeLeagueTable( leaguedf, 'mainteam', digits, paste( docsdir, '/ROUT', sep = ''), season, level, number, nationNames[ nationId ] ) 
+writeLeagueTable( seniordf, 'mainteam_noyouth', digits, paste( docsdir, '/ROUT', sep = ''), season, level, number, nationNames[ nationId ] ) 
+for ( s in specids ) {
+  writeLeagueTable( speclst[[ s ]], paste( 'mainteam_', specialtyNames[ s ], sep = '' ), digits, paste( docsdir, '/ROUT', sep = ''), season, level, number, nationNames[ nationId ] ) 
+}
