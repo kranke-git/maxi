@@ -7,7 +7,7 @@ source( '/home/kranke/Documents/ResearchProjects/Maxithlon/CODE/RCode/staticdata
 source( '/home/kranke/Documents/ResearchProjects/Maxithlon/CODE/RCode/utils.R' )
 
 # Input begins
-leagueid   <- 7 
+leagueid   <- 1 
 datadir    <- '/home/kranke/Documents/ResearchProjects/Maxithlon/Data'
 docsdir    <- '/home/kranke/Documents/ResearchProjects/Maxithlon/CODE/docs'
 colsummary <- c( 'age', 'wage', 'height', 'weight', 'fans', 'maxid', 'form', 'care', 'experience', 'mood' )

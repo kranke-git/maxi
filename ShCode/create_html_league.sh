@@ -4,7 +4,7 @@
 
 # Input begins
 ROOTDIR="/home/kranke/Documents/ResearchProjects/Maxithlon"
-LEAGUEID=7
+LEAGUEID=2
 SPECIALTIES=( 'Sprinters' 'MiddleDistance' 'LongDistance' 'RaceWalk' 'Jumpers' 'Throwers' 'CombinedAthletes')
 # Input ends
 
