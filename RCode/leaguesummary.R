@@ -23,8 +23,8 @@ number     <- as.numeric( xml_text( xml_find_first( leaguedoc, 'number' ) ) )
 teamids    <- xml_attr( xml_find_all( leaguedoc, "//team" ), 'id' )
 
 # Initialize leaguedf and other data frames
-leaguedf             <- data.frame( matrix( ncol = length( colsummary ) + 6, nrow = length( teamids ) ) )
-colnames( leaguedf ) <- c( 'teamId', 'teamName', 'owner', 'regionId', 'athletesCount', 'weeklyWage', colsummary )
+leaguedf             <- data.frame( matrix( ncol = length( colsummary ) + 7, nrow = length( teamids ) ) )
+colnames( leaguedf ) <- c( 'teamId', 'teamName', 'owner', 'regionId', 'athletesCount', 'weeklyWage', 'percentItalian', colsummary )
 leaguedf$teamId      <- teamids
 seniordf             <- leaguedf
 speclst              <- list()
@@ -52,17 +52,18 @@ for ( teamid in teamids ) {
   }
 
   # Summarize athletes file and fill league dataframe
-  leaguedf <- summarize_athletes( leaguedf, idxdf, athldf, athldf$youth == 0, colsummary, teamdoc )
-  seniordf <- summarize_athletes( seniordf, idxdf, athldf, athldf$youth == 0 & as.numeric( athldf$age >= 18 ), colsummary, teamdoc )
+  leaguedf <- summarize_athletes( leaguedf, idxdf, athldf, athldf$youth == 0, colsummary, teamdoc, nationId )
+  seniordf <- summarize_athletes( seniordf, idxdf, athldf, athldf$youth == 0 & as.numeric( athldf$age >= 18 ), colsummary, teamdoc, nationId )
   for ( s in specids ) {
-    speclst[[ s ]] <- summarize_athletes( speclst[[ s ]], idxdf, athldf, athldf$youth == 0 & as.numeric( athldf$specialtyId ) == s, colsummary, teamdoc )
+    speclst[[ s ]] <- summarize_athletes( speclst[[ s ]], idxdf, athldf, athldf$youth == 0 & as.numeric( athldf$specialtyId ) == s, colsummary, teamdoc, nationId )
   }
 }
 
 # Write routines
-digits          <- c( 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 2, 2, 2, 2 )
-writeLeagueTable( leaguedf, 'mainteam', digits, paste( docsdir, '/ROUT', sep = ''), season, level, number, nationNames[ nationId ] ) 
-writeLeagueTable( seniordf, 'mainteam_noyouth', digits, paste( docsdir, '/ROUT', sep = ''), season, level, number, nationNames[ nationId ] ) 
+digits          <- c( 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 2, 2, 2, 2 )
+sortedRegions   <- regionNames[ order( regionIds ) ]
+writeLeagueTable( leaguedf, 'mainteam', digits, paste( docsdir, '/ROUT', sep = ''), season, level, number, nationNames[ nationId ], sortedRegions ) 
+writeLeagueTable( seniordf, 'mainteam_noyouth', digits, paste( docsdir, '/ROUT', sep = ''), season, level, number, nationNames[ nationId ], sortedRegions ) 
 for ( s in specids ) {
-  writeLeagueTable( speclst[[ s ]], paste( 'mainteam_', specialtyNames[ s ], sep = '' ), digits, paste( docsdir, '/ROUT', sep = ''), season, level, number, nationNames[ nationId ] ) 
+  writeLeagueTable( speclst[[ s ]], paste( 'mainteam_', specialtyNames[ s ], sep = '' ), digits, paste( docsdir, '/ROUT', sep = ''), season, level, number, nationNames[ nationId ], sortedRegions )  
 }
