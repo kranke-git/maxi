@@ -13,15 +13,18 @@ summarize_athletes <- function( leaguedf, idxdf, athldf, idxfilter, colsummary, 
   leaguedf$teamName[ idxdf ]       = xml_text( xml_find_first( teamdoc, 'teamName' ) )
   leaguedf$owner[ idxdf ]          = xml_text( xml_find_first( teamdoc, 'owner' ) )
   leaguedf$regionId[ idxdf ]       = xml_text( xml_find_first( teamdoc, 'regionId' ) )
-  leaguedf$percentItalian[ idxdf ] =
   return( leaguedf )
 }
 ###########################################################################################################
 
 
 ###########################################################################################################
-writeLeagueTable <- function( dfwrite, outlabel, digits, outdir, season, level, number, nationName, regionNames ) {
+writeLeagueTable <- function( dfwrite, outlabel, digits, outdir, season, level, number, nationName, regionNames, timestmp ) {
   # Write out the league table in html format
+  # First create directory if it does not exist
+  if ( !dir.exists( outdir ) ) {
+    dir.create( outdir )
+  }
   dfwrite            = dfwrite[ order( -dfwrite$wage ), ]
   dfwrite$wage       = NULL
   dfwrite$regionName = regionNames[ as.numeric( dfwrite$regionId ) ]
@@ -30,6 +33,6 @@ writeLeagueTable <- function( dfwrite, outlabel, digits, outdir, season, level, 
   outfile            = paste( outdir, '/table_league', leagueid, '_', outlabel, '.html', sep = '' )
   outfile_str        = paste( outdir, '/title_league', leagueid, '.html', sep = '' )
   writeLines( print( xtable( dfwrite, digits = digits ), type="html", html.table.attributes="", include.rownames = FALSE  ), outfile )
-  cat( paste( "Season ", season, "; ", nationName, " League ", level, ".", number, sep = ''), file = outfile_str  )
+  cat( paste( "Season ", season, ", ", timestmp, "; ", nationName, " League ", level, ".", number, sep = ''), file = outfile_str  )
 }
 ###########################################################################################################
